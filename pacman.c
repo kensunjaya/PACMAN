@@ -171,6 +171,7 @@ void readMapFromFile() {
 			printf("%c", maze[i][j]);
 		}
 	}
+	fclose(f);
 }
 
 char readKeyInput(char defaultKey) {
