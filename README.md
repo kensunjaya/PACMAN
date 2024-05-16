@@ -1,2 +1,3 @@
 # PACMAN
-FaCKman - Similar to original PACMAN game. Runs in CLI, written in C language 100%
+FaCKman - Similar to original PACMAN game. Runs in Command Line Interface, written 100% in C language
+## Currently still in development
