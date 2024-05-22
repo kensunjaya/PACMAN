@@ -11,15 +11,13 @@
 
 #define gotoxy(x,y) printf("\033[%d;%dH", y, x)
 
-// USER CONFIG
+// GAME CONFIGURATION
 #define SIDE 40  // UKURAN MAZE (SESUAIKAN DENGAN MAP DI TXT)
-#define DELAY 75 // FPS (1000 / DELAY)
-#define ENTITY_COUNT 3 // JUMLAH MUSUH (SESUAIKAN DENGAN MAP DI TXT)
-#define ENTITY_SPEED 5 // MAKIN TINGGI MAKIN LINCAH PULA MUSUHNYA
+#define DELAY 50 // FPS (1000 / DELAY)
+#define ENTITY_COUNT 4 // JUMLAH MUSUH (SESUAIKAN DENGAN MAP DI TXT)
+#define ENTITY_SPEED 100 // MAKIN TINGGI MAKIN LINCAH PULA MUSUHNYA
 #define ENTITY_MOVEMENT_RANDOMNESS 3 // MAKIN GEDE MAKIN KECIL KEMUNGKINAN PAKE DIJKSTRANYA
 
-const int text_x = SIDE*2 + 12;
-const int text_y = SIDE/2 + 2;
 const int VERTEX = SIDE*SIDE;
 
 int dist[SIDE*SIDE];
@@ -67,35 +65,10 @@ void pop(int entityIndex, int index) {
 
 bool isVoid(char cell) {
 	if (cell == ' ' ||
-		cell == 'C' ||
-		cell == 'E') {
+		cell == 'C') {
 		return true;	
 	}
 	return false;
-}
-
-void buildGraph() {
-    int i, j, baris = 0;
-    
-    for (i=0;i<SIDE;i++) {
-        for (j=0;j<SIDE;j++) {
-            if (isVoid(maze[i][j+1])) {
-                graph[baris][baris+1] = 1;
-            }
-            if (isVoid(maze[i][j-1])) {
-                graph[baris][baris-1] = 1;
-            }
-            if (isVoid(maze[i+1][j])) {
-                graph[baris][baris + SIDE] = 1;
-            }
-            if (isVoid(maze[i-1][j])) {
-                graph[baris][baris - SIDE] = 1;
-            }
-            
-            baris++;
-        }
-        
-    }
 }
 
 int minDistance(int dist[], bool sptSet[]) {
@@ -138,10 +111,36 @@ void dijkstra(char graph[VERTEX][VERTEX], int entityIndex, int src) {  // find t
     }
 }
 
+void buildGraph() {
+    int i, j, baris = 0;
+    
+    for (i=0;i<SIDE;i++) {
+        for (j=0;j<SIDE;j++) {
+            if (isVoid(maze[i][j+1])) {
+                graph[baris][baris+1] = 1;
+            }
+            if (isVoid(maze[i][j-1])) {
+                graph[baris][baris-1] = 1;
+            }
+            if (isVoid(maze[i+1][j])) {
+                graph[baris][baris + SIDE] = 1;
+            }
+            if (isVoid(maze[i-1][j])) {
+                graph[baris][baris - SIDE] = 1;
+            }
+            
+            baris++;
+        }
+        
+    }
+}
+
+
 void readMapFromFile() {
 	FILE *f = fopen("map.txt", "r");
-	int i = 0, j = 0;
+	int i, j;
 	int entityCount = 0;
+	i = j = 0;
 	
 	while (!feof(f)) {	
 		fscanf(f, "%c", &maze[i][j]);
@@ -166,7 +165,6 @@ void readMapFromFile() {
 			if (maze[i][j] == 'E') {
 				source[entityCount] = i * SIDE + j;
 				entityCount++;
-				
 			}
 			printf("%c", maze[i][j]);
 		}
@@ -190,10 +188,10 @@ char readKeyInput(char defaultKey) {
 	return defaultKey;			
 }
 
-bool stillAlive(Node *node[ENTITY_COUNT]) {
+bool stillAlive(int prevX[ENTITY_COUNT], int prevY[ENTITY_COUNT]) {
 	int i;
 	for (i=0;i<ENTITY_COUNT;i++) {
-		if (node[i]->data == dest) {
+		if ((prevY[i] * SIDE) + prevX[i] == dest) {
 			return false;
 		} 
 	}
@@ -212,49 +210,89 @@ bool isCollideWithAnotherEntity(int pos, Node *entity[ENTITY_COUNT]) {
 
 int gameExecution() {
 	readMapFromFile();
-	int y, j, i, prevY[ENTITY_COUNT];
+	int x, y, j, i, prevY[ENTITY_COUNT], prevX[ENTITY_COUNT];
 	Node *curr[ENTITY_COUNT];
 	long long int screenRefreshCount = 0;
 	char key, direction = ' ';
 	for (i=0;i<ENTITY_COUNT;i++) {
 		dijkstra(graph, i, source[i]);
 		curr[i] = head[i][dest];
+		prevY[i] = source[i] / SIDE;
+		prevX[i] = source[i] % SIDE;
 	}
 	gotoxy(1, 25);
 	system("pause");
-	while (stillAlive(curr)) {
+	while (stillAlive(prevX, prevY)) {
 		for(i=0;i<ENTITY_COUNT;i++) {
 			for (j=0;j<SIDE*SIDE;j++) {
 				pop(i, j);
 			}
-			dijkstra(graph, i, source[i]);
+			dijkstra(graph, i, (prevY[i] * SIDE) + prevX[i]);
 			curr[i] = head[i][dest];
-			prevY[i] = curr[i]->data / SIDE;
+//			prevY[i] = curr[i]->data / SIDE;
+//			prevX[i] = curr[i]->data % SIDE;
 		}
 		
 		while (curr[0]) {
 			direction = readKeyInput(direction);
 			screenRefreshCount++;
-			
 			// move the enemy
 			for (i=0;i<ENTITY_COUNT;i++) {
 				if (screenRefreshCount % ENTITY_SPEED) {
-					if (!randint(0, ENTITY_MOVEMENT_RANDOMNESS)) {
-						gotoxy((curr[i]->data % SIDE) + 1, prevY[i] + 1);
-			            printf(" "); // clear previous cell
-			            if (isCollideWithAnotherEntity(curr[i]->next->data, curr)) { // pastikan 1 cell hanya diisi oleh 1 musuh
-			            	continue;
-						}
+					gotoxy(prevX[i] + 1, prevY[i] + 1);
+			        printf(" "); // clear previous cell
+			        int randomMove = randint(0, ENTITY_MOVEMENT_RANDOMNESS);
+					if (!randomMove || randomMove == 1) {
+//			            if (isCollideWithAnotherEntity(curr[i]->next->data, curr)) { // pastikan 1 cell hanya diisi oleh 1 musuh
+//			            	continue;
+//						}
 			            curr[i] = curr[i]->next;
 			            y = curr[i]->data / SIDE;
-						gotoxy((curr[i]->data % SIDE) + 1, y + 1);
+			            x = curr[i]->data % SIDE;
+						gotoxy(x + 1, y + 1);
 			            printf("\033[1m\033[33mE\033[0;37m"); // write in new cell
 			            prevY[i] = y;
+			            prevX[i] = x;
+					}
+					else {
+			            int randomPosX = prevX[i];
+			            int randomPosY = prevY[i];
+			            
+						int directionVal = randint(0, 3);
+						const int initialDirectionVal = directionVal;
+						do {
+							if (directionVal == 0 && isVoid(maze[randomPosY][randomPosX + 1])) {
+								randomPosX += 1;
+								break;
+							}	
+							else if (directionVal == 1 && isVoid(maze[randomPosY][randomPosX - 1])) {
+								randomPosX -= 1;
+								break;
+							}
+							else if (directionVal == 2 && isVoid(maze[randomPosY + 1][randomPosX])) {
+								randomPosY += 1;
+								break;
+							}
+							else if (directionVal == 3 && isVoid(maze[randomPosY - 1][randomPosX])) {
+								randomPosY -= 1;
+								break;
+							}
+							else {
+								directionVal = (directionVal + 1) % 4;
+							}
+						} while (directionVal != initialDirectionVal);
+							
+						gotoxy(randomPosX + 1, randomPosY + 1);
+						printf("\033[1m\033[33mE\033[0;37m"); // write in new cell
+						prevY[i] = randomPosY;
+						prevX[i] = randomPosX;
+						dijkstra(graph, i, (prevY[i] * SIDE) + prevX[i]);
+						curr[i] = head[i][dest];
 					}
 				}
 			}
 			
-			if (!stillAlive(curr)) {
+			if (!stillAlive(prevX, prevY)) {
 				gotoxy(1, 26);
 				return 0;
 			}
@@ -322,15 +360,16 @@ int gameExecution() {
 				}
 			}
 			gotoxy(1, 25);
-            
 		}
 	}
 	gotoxy(1, 26);
 }
 
 int main() {
+	srand(time(0));
 	char option = 'y';
 	do {
+		option = ' ';
 		gameExecution();
 		printf("Do you want to try again (y/n)? ");
 		scanf("%c", &option); getchar();
