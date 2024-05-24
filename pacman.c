@@ -12,11 +12,11 @@
 #define gotoxy(x,y) printf("\033[%d;%dH", y, x)
 
 // GAME CONFIGURATION
-#define SIDE 40  // UKURAN MAZE (SESUAIKAN DENGAN MAP DI TXT)
+#define SIDE 40  // Ukuran Maze
 #define DELAY 50 // FPS (1000 / DELAY)
-#define ENTITY_COUNT 3 // JUMLAH MUSUH (SESUAIKAN DENGAN MAP DI TXT)
-#define ENTITY_SPEED 1000 // MAKIN TINGGI MAKIN LINCAH PULA MUSUHNYA
-#define ENTITY_MOVEMENT_RANDOMNESS 4 // MAKIN GEDE MAKIN KECIL KEMUNGKINAN PAKE DIJKSTRANYA
+#define ENTITY_COUNT 3 // Jumlah musuh
+#define ENTITY_SPEED 1000 // Kecepatan musuh
+#define ENTITY_MOVEMENT_RANDOMNESS 6 // Semakin high, semakin minimal kemungkinan musuh menggunakan algoritma dijkstra
 
 #define BLK "\e[0;30m"
 #define RED "\e[0;31m"
@@ -151,7 +151,7 @@ void buildGraph() {
 
 void readMapFromFile() {
 	FILE *f = fopen("map.txt", "r");
-	totalCoin = 0;
+	totalCoin = collectedCoin = 0;
 	int i, j, entityCount = 0;
 	i = j = 0;
 	
@@ -362,13 +362,13 @@ int gameExecution() {
 				}
 			}
 			
+			gotoxy(9, 20);
+			printf("%-5d", collectedCoin);
+			
 			if (collectedCoin >= totalCoin) {
 				gotoxy(1, 22);
 				return 1;
 			}
-			
-			gotoxy(1, 20);
-			printf("Points: %-5d", collectedCoin);
 			
 			if (!stillAlive(prevX, prevY)) {
 				gotoxy(1, 22);
@@ -479,10 +479,12 @@ int main() {
 		}
 		else {
 			printf("Congratulations, you won!");
+			system("pause");
+			break;
 		}
 		scanf("%c", &option); getchar();
 		system("cls");
-	} while (option == 'y' || option == 'Y' || win);
+	} while (option == 'y' || option == 'Y');
 	printf("Thanks for playing");
 	return 0;
 }
