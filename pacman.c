@@ -12,11 +12,11 @@
 #define gotoxy(x,y) printf("\033[%d;%dH", y, x)
 
 // GAME CONFIGURATION
-#define SIDE 40  // UKURAN MAZE (SESUAIKAN DENGAN MAP DI TXT)
+#define SIDE 40  // Ukuran Maze
 #define DELAY 50 // FPS (1000 / DELAY)
-#define ENTITY_COUNT 3 // JUMLAH MUSUH (SESUAIKAN DENGAN MAP DI TXT)
-#define ENTITY_SPEED 1000 // MAKIN TINGGI MAKIN LINCAH PULA MUSUHNYA
-#define ENTITY_MOVEMENT_RANDOMNESS 3 // MAKIN GEDE MAKIN KECIL KEMUNGKINAN PAKE DIJKSTRANYA
+#define ENTITY_COUNT 3 // Jumlah musuh
+#define ENTITY_SPEED 1000 // Kecepatan musuh
+#define ENTITY_MOVEMENT_RANDOMNESS 3 // Semakin high, semakin minimal kemungkinan musuh menggunakan algoritma dijkstra
 
 #define BLK "\e[0;30m"
 #define RED "\e[0;31m"
