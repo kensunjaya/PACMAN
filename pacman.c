@@ -14,16 +14,27 @@
 // GAME CONFIGURATION
 #define SIDE 40  // UKURAN MAZE (SESUAIKAN DENGAN MAP DI TXT)
 #define DELAY 50 // FPS (1000 / DELAY)
-#define ENTITY_COUNT 4 // JUMLAH MUSUH (SESUAIKAN DENGAN MAP DI TXT)
-#define ENTITY_SPEED 100 // MAKIN TINGGI MAKIN LINCAH PULA MUSUHNYA
-#define ENTITY_MOVEMENT_RANDOMNESS 3 // MAKIN GEDE MAKIN KECIL KEMUNGKINAN PAKE DIJKSTRANYA
+#define ENTITY_COUNT 3 // JUMLAH MUSUH (SESUAIKAN DENGAN MAP DI TXT)
+#define ENTITY_SPEED 1000 // MAKIN TINGGI MAKIN LINCAH PULA MUSUHNYA
+#define ENTITY_MOVEMENT_RANDOMNESS 4 // MAKIN GEDE MAKIN KECIL KEMUNGKINAN PAKE DIJKSTRANYA
+
+#define BLK "\e[0;30m"
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YEL "\e[0;33m"
+#define BLU "\e[0;34m"
+#define MAG "\e[0;35m"
+#define CYN "\e[0;96m"
+#define WHT "\e[0;37m"
+#define CRESET "\e[0m"
 
 const int VERTEX = SIDE*SIDE;
 
 int dist[SIDE*SIDE];
 int source[ENTITY_COUNT], dest;
+int totalCoin, collectedCoin;
 
-char maze[SIDE][SIDE] = {0};
+unsigned char maze[SIDE][SIDE] = {0};
 char graph[SIDE*SIDE][SIDE*SIDE] = {0};
 
 typedef struct Node{
@@ -64,9 +75,12 @@ void pop(int entityIndex, int index) {
 }
 
 bool isVoid(char cell) {
-	if (cell == ' ' ||
-		cell == 'C') {
-		return true;	
+	if (
+		cell == '.' ||
+		cell == ' ' ||
+		cell == 'C' ||
+		cell == 'E') {
+		return true;
 	}
 	return false;
 }
@@ -131,19 +145,18 @@ void buildGraph() {
             
             baris++;
         }
-        
     }
 }
 
 
 void readMapFromFile() {
 	FILE *f = fopen("map.txt", "r");
-	int i, j;
-	int entityCount = 0;
+	totalCoin = 0;
+	int i, j, entityCount = 0;
 	i = j = 0;
 	
 	while (!feof(f)) {	
-		fscanf(f, "%c", &maze[i][j]);
+		maze[i][j] = fgetc(f);
 		if (maze[i][j] == '\n') {
 			i++;
 			j=0;
@@ -164,12 +177,60 @@ void readMapFromFile() {
 			}
 			if (maze[i][j] == 'E') {
 				source[entityCount] = i * SIDE + j;
+				maze[i][j] = '.';
 				entityCount++;
 			}
-			printf("%c", maze[i][j]);
+			printf(BLU);
+			switch (maze[i][j]) {
+				case '{':
+					putchar(185);
+					break;
+				case '|':
+					putchar(186);
+					break;
+				case '\\':
+					putchar(187);
+					break;
+				case 'l':
+					putchar(188);
+					break;
+				case 'L':
+					putchar(200);
+					break;
+				case '/':
+					putchar(201);
+					break;
+				case 'T':
+					putchar(203);
+					break;
+				case '}':
+					putchar(204);
+					break;
+				case '-':
+					putchar(205);
+					break;
+				case '.':
+					printf(WHT);
+					putchar(250);
+					totalCoin++;
+					break;
+				case 'C':
+					printf(CYN);
+					putchar('C');
+					break;
+				case 'E':
+					printf(YEL);
+					putchar('E');
+					break;	
+				default:
+					putchar(maze[i][j]);
+			}
+				
+//			printf("%c", maze[i][j]);
 		}
 	}
 	fclose(f);
+	printf(CRESET);
 }
 
 char readKeyInput(char defaultKey) {
@@ -220,8 +281,11 @@ int gameExecution() {
 		prevY[i] = source[i] / SIDE;
 		prevX[i] = source[i] % SIDE;
 	}
-	gotoxy(1, 25);
+	gotoxy(1, 20);
 	system("pause");
+	gotoxy(1, 20);
+	printf("Points: %-30d", collectedCoin);
+
 	while (stillAlive(prevX, prevY)) {
 		for(i=0;i<ENTITY_COUNT;i++) {
 			for (j=0;j<SIDE*SIDE;j++) {
@@ -240,7 +304,13 @@ int gameExecution() {
 			for (i=0;i<ENTITY_COUNT;i++) {
 				if (screenRefreshCount % ENTITY_SPEED) {
 					gotoxy(prevX[i] + 1, prevY[i] + 1);
-			        printf(" "); // clear previous cell
+					if (maze[prevY[i]][prevX[i]] == '.') {
+						putchar(250);
+					}
+					else {
+						putchar(' ');
+					}
+			         // clear previous cell
 			        int randomMove = randint(0, ENTITY_MOVEMENT_RANDOMNESS);
 					if (!randomMove || randomMove == 1) {
 //			            if (isCollideWithAnotherEntity(curr[i]->next->data, curr)) { // pastikan 1 cell hanya diisi oleh 1 musuh
@@ -292,8 +362,16 @@ int gameExecution() {
 				}
 			}
 			
+			if (collectedCoin >= totalCoin) {
+				gotoxy(1, 22);
+				return 1;
+			}
+			
+			gotoxy(1, 20);
+			printf("Points: %-5d", collectedCoin);
+			
 			if (!stillAlive(prevX, prevY)) {
-				gotoxy(1, 26);
+				gotoxy(1, 22);
 				return 0;
 			}
 			usleep(DELAY*1000);
@@ -302,6 +380,10 @@ int gameExecution() {
 			if (direction == 'l') {
 				j = (dest - 1) / SIDE;
 				if (isVoid(maze[j][(dest - 1) % SIDE])) {
+					if (maze[j][(dest - 1) % SIDE] == '.') {
+						maze[j][(dest - 1) % SIDE] = ' ';
+						collectedCoin++;
+					}
 					y = dest / SIDE;
 					gotoxy((dest % SIDE) + 1, y + 1);
 					printf(" ");
@@ -313,10 +395,15 @@ int gameExecution() {
 					}
 					break;
 				}
+				break;
 			}
 			else if (direction == 'r') {
 				j = (dest + 1) / SIDE;
 				if (isVoid(maze[j][(dest + 1) % SIDE])) {
+					if (maze[j][(dest + 1) % SIDE] == '.') {
+						maze[j][(dest + 1) % SIDE] = ' ';
+						collectedCoin++;
+					}
 					y = dest / SIDE;
 					gotoxy((dest % SIDE) + 1, y + 1);
 					printf(" ");
@@ -328,10 +415,15 @@ int gameExecution() {
 					}
 					break;
 				}
+				break;
 			}
 			else if (direction == 'd') {
 				j = (dest + SIDE) / SIDE;
 				if (isVoid(maze[j][(dest + SIDE) % SIDE])) {
+					if (maze[j][(dest + SIDE) % SIDE] == '.') {
+						maze[j][(dest + SIDE) % SIDE] = ' ';
+						collectedCoin++;
+					}
 					y = dest / SIDE;
 					gotoxy((dest % SIDE) + 1, y + 1);
 					printf(" ");
@@ -343,10 +435,15 @@ int gameExecution() {
 					}
 					break;
 				}
+				break;
 			}
 			else if (direction == 'u') {
 				j = (dest - SIDE) / SIDE;
 				if (isVoid(maze[j][(dest - SIDE) % SIDE])) {
+					if (maze[j][(dest - SIDE) % SIDE] == '.') {
+						maze[j][(dest - SIDE) % SIDE] = ' ';
+						collectedCoin++;
+					}
 					y = dest / SIDE;
 					gotoxy((dest % SIDE) + 1, y + 1);
 					printf(" ");
@@ -358,23 +455,34 @@ int gameExecution() {
 					}
 					break;
 				}
+				break;
 			}
-			gotoxy(1, 25);
+//			else {
+//				break;
+//			}
+//			gotoxy(1, 25);
 		}
 	}
-	gotoxy(1, 26);
+	gotoxy(1, 22);
+	return 0;
 }
 
 int main() {
 	srand(time(0));
 	char option = 'y';
+	int win = 0;
 	do {
 		option = ' ';
-		gameExecution();
-		printf("Do you want to try again (y/n)? ");
+		win = gameExecution();
+		if (!win) {
+			printf("Do you want to try again (y/n)? ");
+		}
+		else {
+			printf("Congratulations, you won!");
+		}
 		scanf("%c", &option); getchar();
 		system("cls");
-	} while (option == 'y' || option == 'Y');
+	} while (option == 'y' || option == 'Y' || win);
 	printf("Thanks for playing");
 	return 0;
 }
