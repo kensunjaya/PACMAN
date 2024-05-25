@@ -263,6 +263,9 @@ void readMapFromFile() {
 				case '/':
 					putchar(201);
 					break;
+				case '^':
+					putchar(202);
+					break;
 				case 'T':
 					putchar(203);
 					break;
