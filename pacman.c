@@ -15,8 +15,8 @@
 #define SIDE 40  // Ukuran Maze
 #define DELAY 50 // FPS (1000 / DELAY)
 #define ENTITY_COUNT 3 // Jumlah musuh
-#define ENTITY_SPEED 1000 // Kecepatan musuh
-#define ENTITY_MOVEMENT_RANDOMNESS 6 // Semakin high, semakin minimal kemungkinan musuh menggunakan algoritma dijkstra
+#define ENTITY_SPEED 2 // Kecepatan musuh
+#define ENTITY_MOVEMENT_RANDOMNESS 3 // Semakin high, semakin minimal kemungkinan musuh menggunakan algoritma dijkstra
 
 #define BLK "\e[0;30m"
 #define RED "\e[0;31m"
@@ -33,6 +33,7 @@ const int VERTEX = SIDE*SIDE;
 int dist[SIDE*SIDE];
 int source[ENTITY_COUNT], dest;
 int totalCoin, collectedCoin;
+long long int elapsedTime;
 
 unsigned char maze[SIDE][SIDE] = {0};
 char graph[SIDE*SIDE][SIDE*SIDE] = {0};
@@ -151,7 +152,7 @@ void buildGraph() {
 
 void readMapFromFile() {
 	FILE *f = fopen("map.txt", "r");
-	totalCoin = collectedCoin = 0;
+	totalCoin = collectedCoin = elapsedTime = 0;
 	int i, j, entityCount = 0;
 	i = j = 0;
 	
@@ -285,6 +286,9 @@ int gameExecution() {
 	system("pause");
 	gotoxy(1, 20);
 	printf("Points: %-30d", collectedCoin);
+	gotoxy(1, 21);
+	printf("Elapsed time: 0s");
+	int startTime = time(0);
 
 	while (stillAlive(prevX, prevY)) {
 		for(i=0;i<ENTITY_COUNT;i++) {
@@ -364,6 +368,9 @@ int gameExecution() {
 			
 			gotoxy(9, 20);
 			printf("%-5d", collectedCoin);
+			gotoxy(15, 21);
+			elapsedTime = time(0) - startTime;
+			printf("%llds", elapsedTime);
 			
 			if (collectedCoin >= totalCoin) {
 				gotoxy(1, 22);
