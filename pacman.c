@@ -19,11 +19,11 @@
 #define ENTITY_MOVEMENT_RANDOMNESS 3 // Semakin high, semakin minimal kemungkinan musuh menggunakan algoritma dijkstra
 
 #define BLK "\e[0;30m"
-#define RED "\e[0;31m"
-#define GRN "\e[0;32m"
-#define YEL "\e[0;33m"
-#define BLU "\e[0;34m"
-#define MAG "\e[0;35m"
+#define RED "\e[0;91m"
+#define GRN "\e[0;92m"
+#define YEL "\e[0;93m"
+#define BLU "\e[0;94m"
+#define PNK "\e[0;35m"
 #define CYN "\e[0;96m"
 #define WHT "\e[0;37m"
 #define CRESET "\e[0m"
@@ -32,7 +32,7 @@ const int VERTEX = SIDE*SIDE;
 
 int dist[SIDE*SIDE];
 int source[ENTITY_COUNT], dest;
-int totalCoin, collectedCoin;
+int totalCoin, collectedCoin, totalSideX, totalSideY;
 long long int elapsedTime;
 
 unsigned char maze[SIDE][SIDE] = {0};
@@ -62,6 +62,67 @@ Node *insert_node(Node *curr, int x) {
     
     curr->next = insert_node(curr->next, x);
     return curr;
+}
+
+void gameOver(int win) {	
+	int i, j;
+	for (i=0;i<totalSideY/2;i++) {
+		for (j=0;j<totalSideX-1;j++) {
+			if (i % 2 == 0) {
+				gotoxy(j+1, i+1);
+				putchar(176);
+				gotoxy(totalSideX-j-1, totalSideY-i);
+				putchar(176);
+				Sleep(1);
+			}
+			else {
+				gotoxy(j+1, i+1);
+				putchar(176);
+				gotoxy(totalSideX-j-1, totalSideY-i);
+				putchar(176);
+				
+			}
+		}
+	}
+	system("cls");
+	if (!win) {
+		for (i=0;i<10;i++) {
+			system("cls");
+			if (i % 2) {
+				printf(YEL);
+			}
+			else {
+				printf(RED);
+			}
+			puts("   _____                         ____                 ");
+			puts("  / ____|                       / __ \\                ");
+			puts(" | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ __ ");
+			puts(" | | |_ |/ _` | '_ ` _ \\ / _ \\ | |  | \\ \\ / / _ \\ '__|");
+			puts(" | |__| | (_| | | | | | |  __/ | |__| |\\ V /  __/ |   ");
+			puts("  \\_____|\\__,_|_| |_| |_|\\___|  \\____/  \\_/ \\___|_|   ");
+			Sleep(100);
+		}
+	}
+	else {
+		for (i=0;i<10;i++) {
+			system("cls");
+			if (i % 2) {
+				printf(GRN);
+			}
+			else {
+				printf(PNK);
+			}
+			puts(" ____  ____   ___   _____  _____   ____      ____  _____  ____  _____  ");
+			puts("|_  _||_  _|.'   `.|_   _||_   _| |_  _|    |_  _||_   _||_   \\|_   _| ");
+			puts("  \\ \\  / / /  .-.  \\ | |    | |     \\ \\  /\\  / /    | |    |   \\ | |   ");
+			puts("   \\ \\/ /  | |   | | | '    ' |      \\ \\/  \\/ /     | |    | |\\ \\| |   ");
+			puts("   _|  |_  \\  `-'  /  \\ \\__/ /        \\  /\\  /     _| |_  _| |_\\   |_  ");
+			puts("  |______|  `.___.'    `.__.'          \\/  \\/     |_____||_____||____| ");
+			Sleep(100);
+		}
+	}
+	
+	printf(CRESET);
 }
 
 void pop(int entityIndex, int index) { 
@@ -149,7 +210,6 @@ void buildGraph() {
     }
 }
 
-
 void readMapFromFile() {
 	FILE *f = fopen("map.txt", "r");
 	totalCoin = collectedCoin = elapsedTime = 0;
@@ -165,10 +225,12 @@ void readMapFromFile() {
 		}
 		j++;
 	}
+	totalSideX = j;
+	totalSideY = i+1;
 	buildGraph();
 	
-	for (i=0;i<SIDE;i++) {
-		for (j=0;j<SIDE;j++) {
+	for (i=0;i<totalSideY;i++) {
+		for (j=0;j<totalSideX;j++) {
 			if (maze[i][j] == '\n') {
 				puts("");
 				break;
@@ -373,11 +435,13 @@ int gameExecution() {
 			printf("%llds", elapsedTime);
 			
 			if (collectedCoin >= totalCoin) {
+				gameOver(1); // win
 				gotoxy(1, 22);
 				return 1;
 			}
 			
 			if (!stillAlive(prevX, prevY)) {
+				gameOver(0); // lose
 				gotoxy(1, 22);
 				return 0;
 			}
@@ -464,12 +528,9 @@ int gameExecution() {
 				}
 				break;
 			}
-//			else {
-//				break;
-//			}
-//			gotoxy(1, 25);
 		}
 	}
+	gameOver(0);
 	gotoxy(1, 22);
 	return 0;
 }
@@ -486,6 +547,9 @@ int main() {
 		}
 		else {
 			printf("Congratulations, you won!");
+			
+			// minta user masukin nickname, lalu assign ke high score list
+			
 			system("pause");
 			break;
 		}
