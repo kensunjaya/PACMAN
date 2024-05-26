@@ -15,21 +15,21 @@
 #define SIDE 40  // Ukuran Maze
 #define DELAY 50 // FPS (1000 / DELAY)
 #define ENTITY_COUNT 3 // Jumlah musuh
-#define ENTITY_SPEED 2 // Kecepatan musuh
-#define ENTITY_MOVEMENT_RANDOMNESS 3 // Semakin high, semakin minimal kemungkinan musuh menggunakan algoritma dijkstra
+
 
 #define BLK "\e[0;30m"
 #define RED "\e[0;91m"
 #define GRN "\e[0;92m"
 #define YEL "\e[0;93m"
 #define BLU "\e[0;94m"
-#define PNK "\e[0;35m"
+#define PNK "\e[0;95m"
 #define CYN "\e[0;96m"
 #define WHT "\e[0;37m"
 #define CRESET "\e[0m"
 
 const int VERTEX = SIDE*SIDE;
-
+int ENTITY_MOVEMENT_RANDOMNESS = 3; // Semakin high, semakin minimal kemungkinan musuh menggunakan algoritma dijkstra
+int ENTITY_SPEED = 2; // Kecepatan musuh
 int dist[SIDE*SIDE];
 int source[ENTITY_COUNT], dest;
 int totalCoin, collectedCoin, totalSideX, totalSideY;
@@ -332,10 +332,10 @@ bool stillAlive(int prevX[ENTITY_COUNT], int prevY[ENTITY_COUNT]) {
 	return true;
 }
 
-bool isCollideWithAnotherEntity(int pos, Node *entity[ENTITY_COUNT]) {
+bool isCollideWithAnotherEntity(int pos, int prevX[ENTITY_COUNT], int prevY[ENTITY_COUNT]) {
 	int i;
 	for (i=0;i<ENTITY_COUNT;i++) {
-		if (pos == entity[i]->data) {
+		if (pos == (prevY[i]*SIDE) + prevX[i]) {
 			return true;
 		}
 	}
@@ -389,9 +389,9 @@ int gameExecution() {
 			         // clear previous cell
 			        int randomMove = randint(0, ENTITY_MOVEMENT_RANDOMNESS);
 					if (!randomMove || randomMove == 1) {
-//			            if (isCollideWithAnotherEntity(curr[i]->next->data, curr)) { // pastikan 1 cell hanya diisi oleh 1 musuh
-//			            	continue;
-//						}
+			            if (isCollideWithAnotherEntity(curr[i]->next->data, prevX, prevY)) { // pastikan 1 cell hanya diisi oleh 1 musuh
+			            	continue;
+						}
 			            curr[i] = curr[i]->next;
 			            y = curr[i]->data / SIDE;
 			            x = curr[i]->data % SIDE;
@@ -446,13 +446,13 @@ int gameExecution() {
 			
 			if (collectedCoin >= totalCoin) {
 				gameOver(1); // win
-				gotoxy(1, 22);
+				gotoxy(1, 12);
 				return 1;
 			}
 			
 			if (!stillAlive(prevX, prevY)) {
 				gameOver(0); // lose
-				gotoxy(1, 22);
+				gotoxy(1, 12);
 				return 0;
 			}
 			usleep(DELAY*1000);
@@ -541,7 +541,7 @@ int gameExecution() {
 		}
 	}
 	gameOver(0);
-	gotoxy(1, 22);
+	gotoxy(1, 12);
 	return 0;
 }
 
@@ -667,41 +667,46 @@ void displayHighScores() {
     system("cls");
 }
 
-void play(){
+void play(int difficulty){
+	
+	switch (difficulty) {
+		case 0:
+			ENTITY_MOVEMENT_RANDOMNESS = 6;
+			ENTITY_SPEED = 2;
+			break;
+		case 1:
+			ENTITY_MOVEMENT_RANDOMNESS = 3;
+			ENTITY_SPEED = 3;
+			break;
+		case 2:
+			ENTITY_MOVEMENT_RANDOMNESS = 2;
+			ENTITY_SPEED = 10;
+			break;
+		case 3:
+			ENTITY_MOVEMENT_RANDOMNESS = 0;
+			ENTITY_SPEED = INT_MAX;
+			break;			
+	}
 	char option = 'y';
 	int win = 0;
 	
-	char name[50];
-    printf("Enter your name: ");
-    scanf("%[^\n]", name); getchar();
+	char name[100];
+	do {
+		system("cls");
+		printf(GRN);
+		printf("Enter your name: ");
+		printf(YEL);
+    	scanf("%[^\n]", name); getchar();
+	} while (strlen(name) < 1);
     system("cls");
 	do {
 		option = ' ';
 		win = gameExecution();
-		if (!win) {
-			printf("Do you want to try again (y/n)? ");
-		}
-		else {
-			printf("Congratulations, you won!");
-			
-			system("pause");
-			break;
-		}
+		system("pause");
 		scanf("%c", &option); getchar();
 		system("cls");
 	} while (option == 'y' || option == 'Y');
 	addHighScore(name, collectedCoin);
-}
-
-void splashArt(){
-	printf(" /$$$$$$$$        /$$$$$$  /$$   /$$                                  \n");
-    printf("| $$_____/       /$$__  $$| $$  /$$/                                  \n");
-    printf("| $$    /$$$$$$ | $$  \\__/| $$ /$$/  /$$$$$$/$$$$   /$$$$$$  /$$$$$$$ \n");
-    printf("| $$$$$|____  $$| $$      | $$$$$/  | $$_  $$_  $$ |____  $$| $$__  $$\n");
-    printf("| $$__/ /$$$$$$$| $$      | $$  $$  | $$ \\ $$ \\ $$  /$$$$$$$| $$  \\ $$\n");
-    printf("| $$   /$$__  $$| $$    $$| $$\\  $$ | $$ | $$ | $$ /$$__  $$| $$  | $$\n");
-    printf("| $$  |  $$$$$$$|  $$$$$$/| $$ \\  $$| $$ | $$ | $$|  $$$$$$$| $$  | $$\n");
-    printf("|__/   \\_______/ \\______/ |__/  \\__/|__/ |__/ |__/ \\_______/|__/  |__/\n");
 }
 
 void exitArt(){
@@ -723,38 +728,117 @@ void exitArt(){
 	Sleep(1);
 }
 
+
+void splashArt(){
+	system("cls");
+	printf(GRN);
+	printf(" /$$$$$$$$        /$$$$$$  /$$   /$$                                  \n");
+    printf("| $$_____/       /$$__  $$| $$  /$$/                                  \n");
+    printf("| $$    /$$$$$$ | $$  \\__/| $$ /$$/  /$$$$$$/$$$$   /$$$$$$  /$$$$$$$ \n");
+    printf("| $$$$$|____  $$| $$      | $$$$$/  | $$_  $$_  $$ |____  $$| $$__  $$\n");
+    printf("| $$__/ /$$$$$$$| $$      | $$  $$  | $$ \\ $$ \\ $$  /$$$$$$$| $$  \\ $$\n");
+    printf("| $$   /$$__  $$| $$    $$| $$\\  $$ | $$ | $$ | $$ /$$__  $$| $$  | $$\n");
+    printf("| $$  |  $$$$$$$|  $$$$$$/| $$ \\  $$| $$ | $$ | $$|  $$$$$$$| $$  | $$\n");
+    printf("|__/   \\_______/ \\______/ |__/  \\__/|__/ |__/ |__/ \\_______/|__/  |__/\n");
+}
+
+
+void printMenu(char options[4][20], int index, int size) {
+	int i;
+	int len = 0;
+	splashArt();
+	
+    for (i=0;i<size;i++) {
+		if (i==index) {
+			gotoxy(5 + (i*12) + len - 2, 15);
+			
+    		printf(BLU"< ");
+    		printf(CYN"%s", options[i]);
+    		printf(BLU" >");
+		}
+		else {
+			gotoxy(5 + (i*12) + len, 15);
+			printf(CYN"%s", options[i]);
+		}
+    	len += strlen(options[i]);
+		gotoxy(0, 0);
+	}
+}
+
+int selector(char options[4][20], int size) {
+	int key;
+	int index = 0;
+	do {
+		key = getch();
+		if (key == 0 || key == 224) {
+            key = getch(); 
+            if (key == 77) {
+				if (index < size - 1) {
+					index++;
+				}
+				
+			}
+			else if (key == 75) {
+				if (index > 0) {
+					index--;
+				}
+			}
+        } 
+		printMenu(options, index, size);
+	} while (key != '\r');
+	return index;
+}
+
+int selectDifficulty(char difficulty[5][20]) {
+	printMenu(difficulty, 0, 5);
+	return selector(difficulty, 5);
+}
+
 int main() {
 	srand(time(0));
-	
-	int choice;
-    do {
-    	splashArt();
-        printf("\nMenu:\n");
-        printf("1. Play\n");
-        printf("2. High Scores\n");
-        printf("3. Exit\n");
-        printf("Enter your choice: ");
-        scanf("%d", &choice); getchar();
-
-        switch (choice) {
-            case 1:
-            	system("cls");
-                play();
-                break;
-            case 2:
-            	system("cls");
-                displayHighScores();
-                break;
-            case 3:
-                printf("Exiting...\n");
-                sleep(1);
-                break;
-            default:
-                printf("Invalid choice. Please try again.\n");
-        }
-    } while (choice != 3);
-    system("cls");
-    exitArt();
-	
+	int index = 0, diff = 0;
+	char difficulty[5][20] = {"Easy", "Normal", "Hard", "Impossible", "Back"};
+	char options[4][20] = {"PLAY", "HIGH SCORE", "EXIT"};
+	do {
+		printMenu(options, index, 3);
+		index = selector(options, 3);
+		switch (index) {
+			case 0:
+	            system("cls");
+	            diff = selectDifficulty(difficulty);
+	            if (diff == 4) {
+	            	break;
+				}
+				else {
+					play(diff);
+				}
+	            break;
+	        case 1:
+	            system("cls");
+	            displayHighScores();
+	            break;
+	        case 2:
+	        	system("cls");
+    			exitArt();
+				exit(0);
+	            break;
+	        default:
+	            printf("Invalid choice. Please try again.\n");
+		}
+	} while (index != 2);	
+//    do {
+//    	splashArt();
+//        printf("\nMenu:\n");
+//        printf("1. Play\n");
+//        printf("2. High Scores\n");
+//        printf("3. Exit\n");
+//        printf("Enter your choice: ");
+//        scanf("%d", &choice); getchar();
+//
+//        switch (choice) {
+//            
+//        }
+//    } while (choice != 3);
+    
 	return 0;
 }
