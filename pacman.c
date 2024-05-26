@@ -44,6 +44,13 @@ typedef struct Node{
 } Node;
 Node *head[ENTITY_COUNT][SIDE*SIDE] = {NULL};
 
+typedef struct HighScoreNode {
+    char name[50];
+    int score;
+    struct HighScoreNode *next;
+} HighScoreNode;
+HighScoreNode *highScores = NULL;
+
 int randint(int a, int b) { // inclusive
     return ((rand() % (b - a + 1) + a));
 }
@@ -538,10 +545,136 @@ int gameExecution() {
 	return 0;
 }
 
-int main() {
-	srand(time(0));
+void pressEnter() {
+	char key;
+	printf("Press enter to continue ...");
+	do {
+  		key = getch();
+ 	} while (key != '\r');
+}
+
+void addHighScore(char *name, int score) {
+    HighScoreNode *current = highScores;
+    HighScoreNode *previous = NULL;
+    while (current != NULL && strcmp(current->name, name) != 0) {
+        previous = current;
+        current = current->next;
+    }
+
+    if (current != NULL) {
+        if (current->score < score) {
+            current->score = score;
+        }
+        return;
+    }
+
+    HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
+    strcpy(newNode->name, name);
+    newNode->score = score;
+    newNode->next = NULL;
+
+    if (!highScores || score > highScores->score) {
+        newNode->next = highScores;
+        highScores = newNode;
+    } else {
+        HighScoreNode *current = highScores;
+        while (current->next && current->next->score >= score) {
+            current = current->next;
+        }
+        newNode->next = current->next;
+        current->next = newNode;
+    }
+
+    FILE *file = fopen("highscore.txt", "a");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    current = highScores;
+    while (current != NULL) {
+        fprintf(file, "%s#%d\n", current->name, current->score);
+        current = current->next;
+    }
+
+    fclose(file);
+}
+
+void displayHighScores() {
+    FILE *file = fopen("highscore.txt", "r");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    HighScoreNode *head = NULL;
+
+    // Read scores from the file and insert them into a linked list
+    char name[50];
+    int score;
+    while (fscanf(file, "%[^#]#%d\n", name, &score) != EOF) {
+        HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
+        strcpy(newNode->name, name);
+        newNode->score = score;
+        newNode->next = NULL;
+
+        if (head == NULL) {
+            head = newNode;
+        } else {
+            // Insert newNode into the linked list in descending order based on score
+            HighScoreNode *prev = NULL;
+            HighScoreNode *current = head;
+            while (current != NULL && current->score >= newNode->score) {
+                prev = current;
+                current = current->next;
+            }
+            if (prev == NULL) {
+                newNode->next = head;
+                head = newNode;
+            } else {
+                prev->next = newNode;
+                newNode->next = current;
+            }
+        }
+    }
+
+    fclose(file);
+
+    // Display the sorted high scores
+    printf("\n%sHigh Scores:%s\n", "\033[1;33m", "\033[0m");
+    printf("%s------------%s\n", "\033[1;33m", "\033[0m");
+
+    printf("+------+--------------------------+-------+\n");
+    printf("| %-4s | %-24s | %-5s |\n", "Rank", "Name", "Score");
+    printf("+------+--------------------------+-------+\n");
+
+    int rank = 1;
+    HighScoreNode *current = head;
+    while (current != NULL) {
+        printf("| %-4d | %-24s | %-5d |\n", rank++, current->name, current->score);
+        current = current->next;
+    }
+    printf("+------+--------------------------+-------+\n");
+
+    // Free allocated memory for the linked list
+    while (head != NULL) {
+        HighScoreNode *temp = head;
+        head = head->next;
+        free(temp);
+    }
+
+    pressEnter();
+    system("cls");
+}
+
+void play(){
 	char option = 'y';
 	int win = 0;
+	
+	char name[50];
+    printf("Enter your name: ");
+    scanf("%[^\n]", name); getchar();
+    system("cls");
 	do {
 		option = ' ';
 		win = gameExecution();
@@ -551,14 +684,77 @@ int main() {
 		else {
 			printf("Congratulations, you won!");
 			
-			// minta user masukin nickname, lalu assign ke high score list
-			
 			system("pause");
 			break;
 		}
 		scanf("%c", &option); getchar();
 		system("cls");
 	} while (option == 'y' || option == 'Y');
-	printf("Thanks for playing");
+	addHighScore(name, collectedCoin);
+}
+
+void splashArt(){
+	printf(" /$$$$$$$$        /$$$$$$  /$$   /$$                                  \n");
+    printf("| $$_____/       /$$__  $$| $$  /$$/                                  \n");
+    printf("| $$    /$$$$$$ | $$  \\__/| $$ /$$/  /$$$$$$/$$$$   /$$$$$$  /$$$$$$$ \n");
+    printf("| $$$$$|____  $$| $$      | $$$$$/  | $$_  $$_  $$ |____  $$| $$__  $$\n");
+    printf("| $$__/ /$$$$$$$| $$      | $$  $$  | $$ \\ $$ \\ $$  /$$$$$$$| $$  \\ $$\n");
+    printf("| $$   /$$__  $$| $$    $$| $$\\  $$ | $$ | $$ | $$ /$$__  $$| $$  | $$\n");
+    printf("| $$  |  $$$$$$$|  $$$$$$/| $$ \\  $$| $$ | $$ | $$|  $$$$$$$| $$  | $$\n");
+    printf("|__/   \\_______/ \\______/ |__/  \\__/|__/ |__/ |__/ \\_______/|__/  |__/\n");
+}
+
+void exitArt(){
+	printf("  _______ _                 _          ______           _____  _             _             _ \n");
+	Sleep(1);
+    printf(" |__   __| |               | |        |  ____|         |  __ \\| |           (_)           | |\n");
+    Sleep(1);
+    printf("    | |  | |__   __ _ _ __ | | _____  | |__ ___  _ __  | |__) | | __ _ _   _ _ _ __   __ _| |\n");
+    Sleep(1);
+    printf("    | |  | '_ \\ / _` | '_ \\| |/ / __| |  __/ _ \\| '__| |  ___/| |/ _` | | | | | '_ \\ / _` | |\n");
+    Sleep(1);
+    printf("    | |  | | | | (_| | | | |   <\\__ \\ | | | (_) | |    | |    | | (_| | |_| | | | | | (_| |_|\n");
+    Sleep(1);
+    printf("    |_|  |_| |_|\\__,_|_| |_|_|\\_\\___/ |_|  \\___/|_|    |_|    |_|\\__,_|\\__, |_|_| |_|\\__, (_)\n");
+    Sleep(1);
+    printf("                                                                        __/ |         __/ |  \n");
+    Sleep(1);
+    printf("                                                                       |___/         |___/   \n");
+	Sleep(1);
+}
+
+int main() {
+	srand(time(0));
+	
+	int choice;
+    do {
+    	splashArt();
+        printf("\nMenu:\n");
+        printf("1. Play\n");
+        printf("2. High Scores\n");
+        printf("3. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice); getchar();
+
+        switch (choice) {
+            case 1:
+            	system("cls");
+                play();
+                break;
+            case 2:
+            	system("cls");
+                displayHighScores();
+                break;
+            case 3:
+                printf("Exiting...\n");
+                sleep(1);
+                break;
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    } while (choice != 3);
+    system("cls");
+    exitArt();
+	
 	return 0;
 }
