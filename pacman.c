@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <windows.h>
+
 #include <conio.h>
 #include <unistd.h>
 #include <time.h>
@@ -50,6 +51,14 @@ typedef struct HighScoreNode {
     struct HighScoreNode *next;
 } HighScoreNode;
 HighScoreNode *highScores = NULL;
+
+
+//void gotoxy(int x, int y) {
+//	COORD coord;
+//	coord.X = x-1;
+//	coord.Y = y-1;
+//	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+//}
 
 int randint(int a, int b) { // inclusive
     return ((rand() % (b - a + 1) + a));
@@ -693,6 +702,7 @@ void play(int difficulty){
 	char name[100];
 	do {
 		system("cls");
+		gotoxy(2, 2);
 		printf(GRN);
 		printf("Enter your name: ");
 		printf(YEL);
@@ -731,8 +741,9 @@ void exitArt(){
 
 void splashArt(){
 	system("cls");
+	gotoxy(2, 2);
 	printf(GRN);
-	printf(" /$$$$$$$$        /$$$$$$  /$$   /$$                                  \n");
+	printf("/$$$$$$$$        /$$$$$$  /$$   /$$                                  \n");
     printf("| $$_____/       /$$__  $$| $$  /$$/                                  \n");
     printf("| $$    /$$$$$$ | $$  \\__/| $$ /$$/  /$$$$$$/$$$$   /$$$$$$  /$$$$$$$ \n");
     printf("| $$$$$|____  $$| $$      | $$$$$/  | $$_  $$_  $$ |____  $$| $$__  $$\n");
@@ -795,6 +806,24 @@ int selectDifficulty(char difficulty[5][20]) {
 }
 
 int main() {
+	// screen size, font, text size SETUP
+	keybd_event(VK_F11, 0, 0, 0); // enter fullscreen mode
+    keybd_event(VK_F11, 0, KEYEVENTF_KEYUP, 0);
+    DWORD dwWidth = GetSystemMetrics(SM_CXSCREEN);
+	DWORD dwHeight = GetSystemMetrics(SM_CYSCREEN);
+	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    CONSOLE_FONT_INFOEX fontInfo = {0};
+    fontInfo.cbSize = sizeof(CONSOLE_FONT_INFOEX);
+    fontInfo.nFont = 0;
+    fontInfo.dwFontSize.X = dwWidth/85;
+    fontInfo.dwFontSize.Y = dwHeight/32; 
+    fontInfo.FontFamily = FF_DONTCARE;
+    fontInfo.FontWeight = FW_NORMAL;
+    wcscpy_s(fontInfo.FaceName, sizeof(fontInfo.FaceName)/sizeof(wchar_t), L"Lucida Console");
+
+    SetCurrentConsoleFontEx(consoleHandle, FALSE, &fontInfo); // change font family & size
+    
 	srand(time(0));
 	int index = 0, diff = 0;
 	char difficulty[5][20] = {"Easy", "Normal", "Hard", "Impossible", "Back"};
