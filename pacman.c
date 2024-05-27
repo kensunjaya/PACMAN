@@ -565,47 +565,64 @@ void pressEnter() {
 void addHighScore(char *name, int score) {
     HighScoreNode *current = highScores;
     HighScoreNode *previous = NULL;
+
+    // Search for the user's previous scores if any
     while (current != NULL && strcmp(current->name, name) != 0) {
         previous = current;
         current = current->next;
     }
 
+    // If the user has previous scores
     if (current != NULL) {
         if (current->score < score) {
             current->score = score;
+        } 
+		else {
+            return;
         }
-        return;
+    } 
+	else {
+        HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
+        strcpy(newNode->name, name);
+        newNode->score = score;
+        newNode->next = NULL;
+
+
+        if (!highScores || score > highScores->score) {
+            newNode->next = highScores;
+            highScores = newNode;
+        } 
+		else {
+            current = highScores;
+            while (current->next && current->next->score >= score) {
+                current = current->next;
+            }
+            newNode->next = current->next;
+            current->next = newNode;
+        }
     }
 
-    HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
-    strcpy(newNode->name, name);
-    newNode->score = score;
-    newNode->next = NULL;
-
-    if (!highScores || score > highScores->score) {
-        newNode->next = highScores;
-        highScores = newNode;
-    } else {
-        HighScoreNode *current = highScores;
-        while (current->next && current->next->score >= score) {
-            current = current->next;
-        }
-        newNode->next = current->next;
-        current->next = newNode;
-    }
-
+    // Open the file to append the new high score
     FILE *file = fopen("highscore.txt", "a");
     if (file == NULL) {
         printf("Error opening file.\n");
         return;
     }
 
-    current = highScores;
-    while (current->next != NULL) {
-        current = current->next;
+    // If the user has previous scores, remove them from the file
+    if (previous != NULL) {
+        HighScoreNode *temp = previous->next;
+        previous->next = NULL;
+        current = temp;
+        while (current != NULL) {
+            HighScoreNode *nextNode = current->next;
+            free(current);
+            current = nextNode;
+        }
     }
-    
-    fprintf(file, "%s#%d\n", current->name, current->score);
+
+    // Write the new high score to the file
+    fprintf(file, "%s#%d\n", name, score);
 
     fclose(file);
 }
@@ -713,8 +730,7 @@ void play(int difficulty){
 	do {
 		option = ' ';
 		win = gameExecution();
-		system("pause");
-		scanf("%c", &option); getchar();
+		pressEnter();
 		system("cls");
 	} while (option == 'y' || option == 'Y');
 	addHighScore(name, collectedCoin);
@@ -850,6 +866,7 @@ int main() {
 	        case 2:
 	        	system("cls");
     			exitArt();
+    			pressEnter();
 				exit(0);
 	            break;
 	        default:
