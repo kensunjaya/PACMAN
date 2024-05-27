@@ -601,10 +601,11 @@ void addHighScore(char *name, int score) {
     }
 
     current = highScores;
-    while (current != NULL) {
-        fprintf(file, "%s#%d\n", current->name, current->score);
+    while (current->next != NULL) {
         current = current->next;
     }
+    
+    fprintf(file, "%s#%d\n", current->name, current->score);
 
     fclose(file);
 }
