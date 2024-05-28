@@ -6,4 +6,4 @@
 ## Currently still in development
 
 ### Actual current game preview
-<img src="https://imgur.com/Z1AxudT.png" width=80% height=80%/>
+<img src="https://imgur.com/Z1AxudT.png" width=85% height=85%/>
