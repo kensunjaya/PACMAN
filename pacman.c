@@ -34,6 +34,7 @@ int ENTITY_SPEED = 2; // Kecepatan musuh
 int dist[SIDE*SIDE];
 int source[ENTITY_COUNT], dest;
 int totalCoin, collectedCoin, totalSideX, totalSideY;
+int selectedDifficulty;
 long long int elapsedTime;
 
 unsigned char maze[SIDE][SIDE] = {0};
@@ -48,6 +49,8 @@ Node *head[ENTITY_COUNT][SIDE*SIDE] = {NULL};
 typedef struct HighScoreNode {
     char name[50];
     int score;
+    long long int time;
+    int difficulty;
     struct HighScoreNode *next;
 } HighScoreNode;
 HighScoreNode *highScores = NULL;
@@ -585,6 +588,8 @@ void addHighScore(char *name, int score) {
         HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
         strcpy(newNode->name, name);
         newNode->score = score;
+        newNode->time = elapsedTime;
+        newNode->difficulty = selectedDifficulty;
         newNode->next = NULL;
 
 
@@ -622,7 +627,7 @@ void addHighScore(char *name, int score) {
     }
 
     // Write the new high score to the file
-    fprintf(file, "%s#%d\n", name, score);
+    fprintf(file, "%s#%d#%lld#%d\n", name, score, elapsedTime, selectedDifficulty);
 
     fclose(file);
 }
@@ -639,10 +644,14 @@ void displayHighScores() {
     // Read scores from the file and insert them into a linked list
     char name[50];
     int score;
-    while (fscanf(file, "%[^#]#%d\n", name, &score) != EOF) {
+    long long int time;
+    int difficulty;
+    while (fscanf(file, "%[^#]#%d#%lld#%d\n", name, &score, &time, &difficulty) != EOF) {
         HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
         strcpy(newNode->name, name);
         newNode->score = score;
+        newNode->time = time;
+        newNode->difficulty = difficulty;
         newNode->next = NULL;
 
         if (head == NULL) {
@@ -652,8 +661,22 @@ void displayHighScores() {
             HighScoreNode *prev = NULL;
             HighScoreNode *current = head;
             while (current != NULL && current->score >= newNode->score) {
-                prev = current;
-                current = current->next;
+            	if (current->score == newNode->score) {
+            		if (current->time == newNode->time) {
+            			if (current->difficulty >= newNode->difficulty) {
+            				prev = current;
+                			current = current->next;
+						}
+					}
+					else if (current->time < newNode->time) {
+						prev = current;
+						current = current->next;
+					}
+				}
+				else {
+					prev = current;
+                	current = current->next;
+				}
             }
             if (prev == NULL) {
                 newNode->next = head;
@@ -671,17 +694,19 @@ void displayHighScores() {
     printf("\n%sHigh Scores:%s\n", "\033[1;33m", "\033[0m");
     printf("%s------------%s\n", "\033[1;33m", "\033[0m");
 
-    printf("+------+--------------------------+-------+\n");
-    printf("| %-4s | %-24s | %-5s |\n", "Rank", "Name", "Score");
-    printf("+------+--------------------------+-------+\n");
+    printf("+------+--------------------------+-------+----------+------------+\n");
+    printf("| Rank | Name                     | Score | Duration | Level      |\n");
+    printf("+------+--------------------------+-------+----------+------------+\n");
 
-    int rank = 1;
+    int rank = 0;
+    
     HighScoreNode *current = head;
+    char diffOptions[4][20] = {"Easy", "Normal", "Hard", "Impossible"};
     while (current != NULL) {
-        printf("| %-4d | %-24s | %-5d |\n", rank++, current->name, current->score);
+        printf("| %-4d | %-24s | %-5d | %-7llds | %-10s |\n", ++rank, current->name, current->score, current->time, diffOptions[current->difficulty]);
         current = current->next;
     }
-    printf("+------+--------------------------+-------+\n");
+    printf("+------+--------------------------+-------+----------+------------+\n");
 
     // Free allocated memory for the linked list
     while (head != NULL) {
@@ -700,18 +725,22 @@ void play(int difficulty){
 		case 0:
 			ENTITY_MOVEMENT_RANDOMNESS = 6;
 			ENTITY_SPEED = 2;
+			selectedDifficulty = 0;
 			break;
 		case 1:
 			ENTITY_MOVEMENT_RANDOMNESS = 3;
 			ENTITY_SPEED = 3;
+			selectedDifficulty = 1;
 			break;
 		case 2:
 			ENTITY_MOVEMENT_RANDOMNESS = 2;
 			ENTITY_SPEED = 10;
+			selectedDifficulty = 2;
 			break;
 		case 3:
 			ENTITY_MOVEMENT_RANDOMNESS = 0;
 			ENTITY_SPEED = INT_MAX;
+			selectedDifficulty = 3;
 			break;			
 	}
 	char option = 'y';
