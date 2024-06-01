@@ -13,7 +13,7 @@
 #define gotoxy(x,y) printf("\033[%d;%dH", y, x)
 
 // GAME CONFIGURATION
-#define SIDE 40  // Ukuran Maze
+#define SIDE 38 // Ukuran Maze
 #define DELAY 50 // FPS (1000 / DELAY)
 #define ENTITY_COUNT 3 // Jumlah musuh
 
@@ -53,8 +53,8 @@ typedef struct HighScoreNode {
     int difficulty;
     struct HighScoreNode *next;
 } HighScoreNode;
-HighScoreNode *highScores = NULL;
-
+//HighScoreNode *highScores = NULL;
+HighScoreNode *highScoreHead = NULL, *highScoreTail = NULL;
 
 //void gotoxy(int x, int y) {
 //	COORD coord;
@@ -67,7 +67,7 @@ int randint(int a, int b) { // inclusive
     return ((rand() % (b - a + 1) + a));
 }
 
-Node *createNewNode(int x) {
+Node *createPathNode(int x) {
     Node *newNode = (Node*)malloc(sizeof(Node));
     newNode->data = x;
     newNode->next = NULL;
@@ -76,7 +76,7 @@ Node *createNewNode(int x) {
 
 Node *insert_node(Node *curr, int x) {
     if (curr == NULL) {
-        return createNewNode(x);
+        return createPathNode(x);
     }
     
     curr->next = insert_node(curr->next, x);
@@ -131,12 +131,12 @@ void gameOver(int win) {
 			else {
 				printf(PNK);
 			}
-			puts(" ____  ____   ___   _____  _____   ____      ____  _____  ____  _____  ");
-			puts("|_  _||_  _|.'   `.|_   _||_   _| |_  _|    |_  _||_   _||_   \\|_   _| ");
-			puts("  \\ \\  / / /  .-.  \\ | |    | |     \\ \\  /\\  / /    | |    |   \\ | |   ");
-			puts("   \\ \\/ /  | |   | | | '    ' |      \\ \\/  \\/ /     | |    | |\\ \\| |   ");
-			puts("   _|  |_  \\  `-'  /  \\ \\__/ /        \\  /\\  /     _| |_  _| |_\\   |_  ");
-			puts("  |______|  `.___.'    `.__.'          \\/  \\/     |_____||_____||____| ");
+			puts(" __     __          __          ___");
+		    puts(" \\ \\   / /          \\ \\        / (_)");
+		    puts("  \\ \\_/ /__  _   _   \\ \\  /\\  / / _ _ __");
+		    puts("   \\   / _ \\| | | |   \\ \\/  \\/ / | | '_ \\");
+		    puts("    | | (_) | |_| |    \\  /\\  /  | | | | |");
+		    puts("    |_|\\___/ \\__,_|     \\/  \\/   |_|_| |_|");
 			Sleep(100);
 		}
 	}
@@ -160,7 +160,8 @@ bool isVoid(char cell) {
 		cell == '.' ||
 		cell == ' ' ||
 		cell == 'C' ||
-		cell == 'E') {
+		cell == 'E' ||
+		cell == 'o') {
 		return true;
 	}
 	return false;
@@ -206,9 +207,18 @@ void dijkstra(char graph[VERTEX][VERTEX], int entityIndex, int src) {  // find t
     }
 }
 
+void emptyGraph() {
+	int i, j;
+	for (i=0;i<VERTEX;i++) {
+		for (j=0;j<VERTEX;j++) {
+			graph[i][j] = 0;
+		}
+	}
+}
+
 void buildGraph() {
     int i, j, baris = 0;
-    
+    emptyGraph();
     for (i=0;i<SIDE;i++) {
         for (j=0;j<SIDE;j++) {
             if (isVoid(maze[i][j+1])) {
@@ -230,7 +240,9 @@ void buildGraph() {
 }
 
 void readMapFromFile() {
-	FILE *f = fopen("map.txt", "r");
+	char filename[50];
+	sprintf(filename, "maps\\map%d.txt", selectedDifficulty);
+	FILE *f = fopen(filename, "r");
 	totalCoin = collectedCoin = elapsedTime = 0;
 	int i, j, entityCount = 0;
 	i = j = 0;
@@ -298,6 +310,10 @@ void readMapFromFile() {
 					printf(WHT);
 					putchar(250);
 					totalCoin++;
+					break;
+				case 'o':
+					printf(WHT);
+					putchar('o');
 					break;
 				case 'C':
 					printf(CYN);
@@ -395,13 +411,16 @@ int gameExecution() {
 					if (maze[prevY[i]][prevX[i]] == '.') {
 						putchar(250);
 					}
+					else if (maze[prevY[i]][prevX[i]] == 'o') {
+						putchar('o');
+					}
 					else {
 						putchar(' ');
 					}
 			         // clear previous cell
 			        int randomMove = randint(0, ENTITY_MOVEMENT_RANDOMNESS);
-					if (!randomMove || randomMove == 1) {
-			            if (isCollideWithAnotherEntity(curr[i]->next->data, prevX, prevY)) { // pastikan 1 cell hanya diisi oleh 1 musuh
+					if (!randomMove || randomMove == 1) { // use dijkstra's algorithm
+			            if (isCollideWithAnotherEntity(curr[i]->next->data, prevX, prevY)) { // pastikan 1 cell hanya diisi oleh 1 E
 			            	continue;
 						}
 			            curr[i] = curr[i]->next;
@@ -412,7 +431,7 @@ int gameExecution() {
 			            prevY[i] = y;
 			            prevX[i] = x;
 					}
-					else {
+					else { // random move
 			            int randomPosX = prevX[i];
 			            int randomPosY = prevY[i];
 			            
@@ -439,7 +458,9 @@ int gameExecution() {
 								directionVal = (directionVal + 1) % 4;
 							}
 						} while (directionVal != initialDirectionVal);
-							
+						if (isCollideWithAnotherEntity((randomPosY*SIDE) + randomPosX, prevX, prevY)) { // pastikan 1 cell hanya diisi oleh 1 E
+			            	continue;
+						}
 						gotoxy(randomPosX + 1, randomPosY + 1);
 						printf("\033[1m\033[33mE\033[0;37m"); // write in new cell
 						prevY[i] = randomPosY;
@@ -477,6 +498,10 @@ int gameExecution() {
 						maze[j][(dest - 1) % SIDE] = ' ';
 						collectedCoin++;
 					}
+					else if (maze[j][(dest - 1) % SIDE] == 'o') {
+						maze[j][(dest - 1) % SIDE] = ' ';
+						collectedCoin+=10;
+					}
 					y = dest / SIDE;
 					gotoxy((dest % SIDE) + 1, y + 1);
 					printf(" ");
@@ -496,6 +521,10 @@ int gameExecution() {
 					if (maze[j][(dest + 1) % SIDE] == '.') {
 						maze[j][(dest + 1) % SIDE] = ' ';
 						collectedCoin++;
+					}
+					else if (maze[j][(dest + 1) % SIDE] == 'o') {
+						maze[j][(dest + 1) % SIDE] = ' ';
+						collectedCoin+=10;
 					}
 					y = dest / SIDE;
 					gotoxy((dest % SIDE) + 1, y + 1);
@@ -517,6 +546,10 @@ int gameExecution() {
 						maze[j][(dest + SIDE) % SIDE] = ' ';
 						collectedCoin++;
 					}
+					else if (maze[j][(dest + SIDE) % SIDE] == 'o') {
+						maze[j][(dest + SIDE) % SIDE] = ' ';
+						collectedCoin+=10;
+					}
 					y = dest / SIDE;
 					gotoxy((dest % SIDE) + 1, y + 1);
 					printf(" ");
@@ -536,6 +569,10 @@ int gameExecution() {
 					if (maze[j][(dest - SIDE) % SIDE] == '.') {
 						maze[j][(dest - SIDE) % SIDE] = ' ';
 						collectedCoin++;
+					}
+					else if (maze[j][(dest - SIDE) % SIDE] == 'o') {
+						maze[j][(dest - SIDE) % SIDE] = ' ';
+						collectedCoin+=10;
 					}
 					y = dest / SIDE;
 					gotoxy((dest % SIDE) + 1, y + 1);
@@ -558,138 +595,180 @@ int gameExecution() {
 }
 
 void pressEnter() {
+	printf(RED);
 	char key;
-	printf("Press enter to continue ...");
+	printf(" Press enter to continue ...");
 	do {
   		key = getch();
  	} while (key != '\r');
+ 	printf(CRESET);
+}
+
+
+HighScoreNode *createHighScoreNode(char name[100], int score, long long int time, int difficulty) {
+	HighScoreNode *newNode = (HighScoreNode*)malloc(sizeof(HighScoreNode));
+	strcpy(newNode->name, name);
+	newNode->score = score;
+	newNode->time = time;
+	newNode->difficulty = difficulty;
+	return newNode;
+}
+
+void pushHead(char name[100], int score, long long int time, int difficulty) {
+	HighScoreNode *newNode = createHighScoreNode(name, score, time, difficulty);
+	if (!highScoreHead) {
+		highScoreHead = highScoreTail = newNode;
+	}
+	else {
+		newNode->next = highScoreHead;
+		highScoreHead = newNode;
+	}
+	highScoreTail->next = NULL;
+}
+
+void pushTail(char name[100], int score, long long int time, int difficulty) {
+	HighScoreNode *newNode = createHighScoreNode(name, score, time, difficulty);
+	if (!highScoreTail) {
+		highScoreHead = highScoreTail = newNode;
+	}
+	else {
+		highScoreTail->next = newNode;
+		highScoreTail = newNode;
+	}
+	highScoreTail->next = NULL;
+}
+
+void pushMid(char name[100], int score, long long int time, int difficulty) {
+	HighScoreNode *newNode = createHighScoreNode(name, score, time, difficulty);
+	
+	if (!highScoreHead) {
+		highScoreHead = highScoreTail = newNode;
+	}
+	
+	else {		
+		if (score <= highScoreHead->score) {
+			pushHead(name, score, time, difficulty);
+		}
+		else if (score >= highScoreTail->score) {
+			pushTail(name, score, time, difficulty);
+		}
+		else {
+			HighScoreNode *curr = highScoreHead;
+			while ((curr->next != NULL) && (curr->next->score < score)) {
+				curr = curr->next;
+			}
+			newNode->next = curr->next;
+			curr->next = newNode;
+			if (curr == highScoreTail) {
+				highScoreTail = newNode;
+			}
+		}
+	}
+	highScoreTail->next = NULL;
+}
+
+void readHighScore() {
+	FILE *file = fopen("highscore.txt", "r");
+	if (!file) {
+        printf("Error opening file.\n");
+        return;
+    }
+	char name[50];
+    int score;
+    long long int time;
+    int difficulty;
+    while (fscanf(file, "%[^#]#%d#%lld#%d\n", name, &score, &time, &difficulty) != EOF) {
+    	pushMid(name, score, time, difficulty);
+    }
+    fclose(file);
 }
 
 void addHighScore(char *name, int score) {
-    HighScoreNode *current = highScores;
-    HighScoreNode *previous = NULL;
+    HighScoreNode *curr = highScoreHead;
+//    HighScoreNode *previous = NULL;
 
     // Search for the user's previous scores if any
-    while (current != NULL && strcmp(current->name, name) != 0) {
-        previous = current;
-        current = current->next;
+    while (curr) {
+    	if (!strcmp(curr->name, name)) {
+    		if (curr->score <= score) {
+	    		curr->score = score;
+	    		curr->time = elapsedTime;
+				curr->difficulty = selectedDifficulty;
+			}
+			break;
+		}
+		curr = curr->next;
     }
-
-    // If the user has previous scores
-    if (current != NULL) {
-        if (current->score < score) {
-            current->score = score;
-        } 
-		else {
-            return;
-        }
-    } 
-	else {
-        HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
-        strcpy(newNode->name, name);
-        newNode->score = score;
-        newNode->time = elapsedTime;
-        newNode->difficulty = selectedDifficulty;
-        newNode->next = NULL;
-
-
-        if (!highScores || score > highScores->score) {
-            newNode->next = highScores;
-            highScores = newNode;
-        } 
-		else {
-            current = highScores;
-            while (current->next && current->next->score >= score) {
-                current = current->next;
-            }
-            newNode->next = current->next;
-            current->next = newNode;
-        }
-    }
+    if (!curr) {
+    	pushTail(name, score, elapsedTime, selectedDifficulty);
+	}
+//    // If the user has previous scores
+//    if (current != NULL) {
+//        if (current->score < score) {
+//            current->score = score;
+//            current->time = elapsedTime;
+//            current->difficulty = selectedDifficulty;
+//        }
+//    } 
+//	else {
+//        HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
+//        strcpy(newNode->name, name);
+//        newNode->score = score;
+//        newNode->time = elapsedTime;
+//        newNode->difficulty = selectedDifficulty;
+//        newNode->next = NULL;
+//
+//
+//        if (!highScores || score > highScores->score) {
+//            newNode->next = highScores;
+//            highScores = newNode;
+//        } 
+//		else {
+//            current = highScores;
+//            while (current->next && current->next->score >= score) {
+//                current = current->next;
+//            }
+//            newNode->next = current->next;
+//            current->next = newNode;
+//        }
+//    }
 
     // Open the file to append the new high score
-    FILE *file = fopen("highscore.txt", "a");
-    if (file == NULL) {
+    FILE *file = fopen("highscore.txt", "w");
+    if (!file) {
         printf("Error opening file.\n");
         return;
     }
 
     // If the user has previous scores, remove them from the file
-    if (previous != NULL) {
-        HighScoreNode *temp = previous->next;
-        previous->next = NULL;
-        current = temp;
-        while (current != NULL) {
-            HighScoreNode *nextNode = current->next;
-            free(current);
-            current = nextNode;
-        }
-    }
+//    if (previous != NULL) {
+//        HighScoreNode *temp = previous->next;
+//        previous->next = NULL;
+//        current = temp;
+//        while (current != NULL) {
+//            HighScoreNode *nextNode = current->next;
+//            free(current);
+//            current = nextNode;
+//        }
+//    }
 
     // Write the new high score to the file
-    fprintf(file, "%s#%d#%lld#%d\n", name, score, elapsedTime, selectedDifficulty);
-
+    curr = highScoreHead;
+    while (curr) {
+    	fprintf(file, "%s#%d#%lld#%d\n", curr->name, curr->score, curr->time, curr->difficulty);
+    	curr = curr->next;
+	}
     fclose(file);
 }
 
 void displayHighScores() {
     FILE *file = fopen("highscore.txt", "r");
-    if (file == NULL) {
+    if (!file) {
         printf("Error opening file.\n");
         return;
     }
 
-    HighScoreNode *head = NULL;
-
-    // Read scores from the file and insert them into a linked list
-    char name[50];
-    int score;
-    long long int time;
-    int difficulty;
-    while (fscanf(file, "%[^#]#%d#%lld#%d\n", name, &score, &time, &difficulty) != EOF) {
-        HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
-        strcpy(newNode->name, name);
-        newNode->score = score;
-        newNode->time = time;
-        newNode->difficulty = difficulty;
-        newNode->next = NULL;
-
-        if (head == NULL) {
-            head = newNode;
-        } else {
-            // Insert newNode into the linked list in descending order based on score
-            HighScoreNode *prev = NULL;
-            HighScoreNode *current = head;
-            while (current != NULL && current->score >= newNode->score) {
-            	if (current->score == newNode->score) {
-            		if (current->time == newNode->time) {
-            			if (current->difficulty >= newNode->difficulty) {
-            				prev = current;
-                			current = current->next;
-						}
-					}
-					else if (current->time < newNode->time) {
-						prev = current;
-						current = current->next;
-					}
-				}
-				else {
-					prev = current;
-                	current = current->next;
-				}
-            }
-            if (prev == NULL) {
-                newNode->next = head;
-                head = newNode;
-            } else {
-                prev->next = newNode;
-                newNode->next = current;
-            }
-        }
-    }
-
-    fclose(file);
-
+    HighScoreNode *curr = highScoreHead;
     // Display the sorted high scores
     printf("\n%sHigh Scores:%s\n", "\033[1;33m", "\033[0m");
     printf("%s------------%s\n", "\033[1;33m", "\033[0m");
@@ -700,20 +779,13 @@ void displayHighScores() {
 
     int rank = 0;
     
-    HighScoreNode *current = head;
     char diffOptions[4][20] = {"Easy", "Normal", "Hard", "Impossible"};
-    while (current != NULL) {
-        printf("| %-4d | %-24s | %-5d | %-7llds | %-10s |\n", ++rank, current->name, current->score, current->time, diffOptions[current->difficulty]);
-        current = current->next;
+    while (curr) {
+        printf("| %-4d | %-24s | %-5d | %-7llds | %-10s |\n", ++rank, curr->name, curr->score, curr->time, diffOptions[curr->difficulty]);
+        curr = curr->next;
     }
-    printf("+------+--------------------------+-------+----------+------------+\n");
-
-    // Free allocated memory for the linked list
-    while (head != NULL) {
-        HighScoreNode *temp = head;
-        head = head->next;
-        free(temp);
-    }
+    fclose(file);
+    printf("+------+--------------------------+-------+----------+------------+\n\n\n");
 
     pressEnter();
     system("cls");
@@ -743,8 +815,6 @@ void play(int difficulty){
 			selectedDifficulty = 3;
 			break;			
 	}
-	char option = 'y';
-	int win = 0;
 	
 	char name[100];
 	do {
@@ -756,12 +826,12 @@ void play(int difficulty){
     	scanf("%[^\n]", name); getchar();
 	} while (strlen(name) < 1);
     system("cls");
-	do {
-		option = ' ';
-		win = gameExecution();
-		pressEnter();
-		system("cls");
-	} while (option == 'y' || option == 'Y');
+
+
+	gameExecution();
+	pressEnter();
+	system("cls");
+
 	addHighScore(name, collectedCoin);
 }
 
@@ -780,8 +850,18 @@ void exitArt(){
     Sleep(1);
     printf("                                                                        __/ |         __/ |  \n");
     Sleep(1);
-    printf("                                                                       |___/         |___/   \n");
+    printf("                                                                       |___/         |___/   \n\n\n");
 	Sleep(1);
+	printf(CYN);
+	puts(" Creators:");
+	puts(" 1. Kenneth Sunjaya");
+	puts(" 2. Frederick Krisna Suryopranoto");
+	puts(" 3. Chris Bernard\n");
+	printf(RED);
+	printf(" GitHub: ");
+	printf(YEL);
+	puts("https://github.com/kensunjaya/PACMAN\n\n");
+	printf(CRESET);
 }
 
 
@@ -874,6 +954,7 @@ int main() {
 	int index = 0, diff = 0;
 	char difficulty[5][20] = {"Easy", "Normal", "Hard", "Impossible", "Back"};
 	char options[4][20] = {"PLAY", "HIGH SCORE", "EXIT"};
+	readHighScore();
 	do {
 		printMenu(options, index, 3);
 		index = selector(options, 3);
@@ -887,10 +968,12 @@ int main() {
 				else {
 					play(diff);
 				}
+				index = 0;
 	            break;
 	        case 1:
 	            system("cls");
 	            displayHighScores();
+	            index = 0;
 	            break;
 	        case 2:
 	        	system("cls");
