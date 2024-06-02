@@ -700,7 +700,7 @@ void addHighScore(char *name, int score) {
 		curr = curr->next;
     }
     if (!curr) {
-    	pushTail(name, score, elapsedTime, selectedDifficulty);
+    	pushMid(name, score, elapsedTime, selectedDifficulty);
 	}
 
     FILE *file = fopen("highscore.txt", "w");
