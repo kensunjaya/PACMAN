@@ -7,4 +7,4 @@
 
 ### Actual current game preview
 <img src="https://imgur.com/Z1AxudT.png" width=85% height=85%/>
-<img src="https://imgur.com/dQGcbKr.png" width=85% height=85%/>
+<img src="https://imgur.com/3Ez7aDR.png" width=85% height=85%/>
