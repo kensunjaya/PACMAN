@@ -693,11 +693,12 @@ void addHighScore(char *name, int score) {
     		if (curr->score <= score) {
 	    		curr->score = score;
 	    		curr->time = elapsedTime;
-				curr->difficulty = selectedDifficulty;
-			}
-			break;
+			curr->difficulty = selectedDifficulty;
 		}
-		curr = curr->next;
+		readHighScore();
+		break;
+	}
+	curr = curr->next;
     }
     if (!curr) {
     	pushMid(name, score, elapsedTime, selectedDifficulty);
