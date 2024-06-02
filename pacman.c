@@ -14,7 +14,7 @@
 
 // GAME CONFIGURATION
 #define SIDE 38 // Ukuran Maze
-#define DELAY 50 // FPS (1000 / DELAY)
+#define DELAY 40 // FPS (1000 / DELAY)
 #define ENTITY_COUNT 3 // Jumlah musuh
 
 
@@ -53,7 +53,7 @@ typedef struct HighScoreNode {
     int difficulty;
     struct HighScoreNode *next;
 } HighScoreNode;
-//HighScoreNode *highScores = NULL;
+
 HighScoreNode *highScoreHead = NULL, *highScoreTail = NULL;
 
 //void gotoxy(int x, int y) {
@@ -105,7 +105,7 @@ void gameOver(int win) {
 	}
 	system("cls");
 	if (!win) {
-		for (i=0;i<10;i++) {
+		for (i=0;i<7;i++) {
 			system("cls");
 			if (i % 2) {
 				printf(YEL);
@@ -123,7 +123,7 @@ void gameOver(int win) {
 		}
 	}
 	else {
-		for (i=0;i<10;i++) {
+		for (i=0;i<7;i++) {
 			system("cls");
 			if (i % 2) {
 				printf(GRN);
@@ -702,88 +702,58 @@ void addHighScore(char *name, int score) {
     if (!curr) {
     	pushTail(name, score, elapsedTime, selectedDifficulty);
 	}
-//    // If the user has previous scores
-//    if (current != NULL) {
-//        if (current->score < score) {
-//            current->score = score;
-//            current->time = elapsedTime;
-//            current->difficulty = selectedDifficulty;
-//        }
-//    } 
-//	else {
-//        HighScoreNode *newNode = (HighScoreNode *)malloc(sizeof(HighScoreNode));
-//        strcpy(newNode->name, name);
-//        newNode->score = score;
-//        newNode->time = elapsedTime;
-//        newNode->difficulty = selectedDifficulty;
-//        newNode->next = NULL;
-//
-//
-//        if (!highScores || score > highScores->score) {
-//            newNode->next = highScores;
-//            highScores = newNode;
-//        } 
-//		else {
-//            current = highScores;
-//            while (current->next && current->next->score >= score) {
-//                current = current->next;
-//            }
-//            newNode->next = current->next;
-//            current->next = newNode;
-//        }
-//    }
 
-    // Open the file to append the new high score
     FILE *file = fopen("highscore.txt", "w");
+    
     if (!file) {
         printf("Error opening file.\n");
         return;
     }
-
-    // If the user has previous scores, remove them from the file
-//    if (previous != NULL) {
-//        HighScoreNode *temp = previous->next;
-//        previous->next = NULL;
-//        current = temp;
-//        while (current != NULL) {
-//            HighScoreNode *nextNode = current->next;
-//            free(current);
-//            current = nextNode;
-//        }
-//    }
-
-    // Write the new high score to the file
+    
     curr = highScoreHead;
+    
     while (curr) {
     	fprintf(file, "%s#%d#%lld#%d\n", curr->name, curr->score, curr->time, curr->difficulty);
     	curr = curr->next;
 	}
+	
     fclose(file);
 }
 
 void displayHighScores() {
     FILE *file = fopen("highscore.txt", "r");
+    
     if (!file) {
         printf("Error opening file.\n");
         return;
     }
 
     HighScoreNode *curr = highScoreHead;
+    
     // Display the sorted high scores
-    printf("\n%sHigh Scores:%s\n", "\033[1;33m", "\033[0m");
-    printf("%s------------%s\n", "\033[1;33m", "\033[0m");
+    printf(YEL);
+    printf("  _    _ _       _                                   \n");
+    printf(" | |  | (_)     | |                                  \n");
+    printf(" | |__| |_  __ _| |__    ___  ___ ___  _ __ ___  ___ \n");
+    printf(" |  __  | |/ _` | '_ \\  / __|/ __/ _ \\| '__/ _ \\/ __|\n");
+    printf(" | |  | | | (_| | | | | \\__ \\ (_| (_) | | |  __/\\__ \\\n");
+    printf(" |_|  |_|_|\\__, |_| |_| |___/\\___\\___/|_|  \\___||___/\n");
+    printf("            __/ |                                    \n");
+    printf("           |___/                                     \n\n");
+    printf(CRESET);
 
     printf("+------+--------------------------+-------+----------+------------+\n");
     printf("| Rank | Name                     | Score | Duration | Level      |\n");
     printf("+------+--------------------------+-------+----------+------------+\n");
 
     int rank = 0;
-    
     char diffOptions[4][20] = {"Easy", "Normal", "Hard", "Impossible"};
+    
     while (curr) {
         printf("| %-4d | %-24s | %-5d | %-7llds | %-10s |\n", ++rank, curr->name, curr->score, curr->time, diffOptions[curr->difficulty]);
         curr = curr->next;
     }
+    
     fclose(file);
     printf("+------+--------------------------+-------+----------+------------+\n\n\n");
 
@@ -791,8 +761,7 @@ void displayHighScores() {
     system("cls");
 }
 
-void play(int difficulty){
-	
+void play(HANDLE handle, int difficulty){
 	switch (difficulty) {
 		case 0:
 			ENTITY_MOVEMENT_RANDOMNESS = 6;
@@ -817,17 +786,20 @@ void play(int difficulty){
 	}
 	
 	char name[100];
+	hideCursor(handle, false);
+	
 	do {
 		system("cls");
 		gotoxy(2, 2);
 		printf(GRN);
 		printf("Enter your name: ");
 		printf(YEL);
-    	scanf("%[^\n]", name); getchar();
+    	scanf(" %[^\n]", name); getchar();
 	} while (strlen(name) < 1);
+	
+	hideCursor(handle, true);
     system("cls");
-
-
+	
 	gameExecution();
 	pressEnter();
 	system("cls");
@@ -835,29 +807,72 @@ void play(int difficulty){
 	addHighScore(name, collectedCoin);
 }
 
+void printRules() {
+	printf(YEL);
+	printf("  _____       _           \n");
+    printf(" |  __ \\     | |          \n");
+    printf(" | |__) |   _| | ___  ___ \n");
+    printf(" |  _  / | | | |/ _ \\/ __|\n");
+    printf(" | | \\ \\ |_| | |  __/\\__ \\\n");
+    printf(" |_|  \\_\\__,_|_|\\___||___/\n\n");
+	printf(GRN);
+	
+	printf(" 1. Collect all ");
+	printf(WHT"%c", 250);
+	printf(GRN);
+	printf(" to win\n");
+	printf(" 2. Avoid getting caught by ");
+	printf(YEL"E\n");
+	printf(GRN);
+	printf(" 3. Collecting ");
+	printf(WHT"o");
+	printf(GRN);
+	printf(" is optional and worth 10 points each\n");
+	printf(" 4. Every ");
+	printf(WHT"%c", 250);
+	printf(GRN);
+	printf(" worth 1 point\n\n");
+	
+	printf(CYN);
+	puts(" EASY       - 29% chance for the enemies to use Dijkstra's algorithm\n              Enemies are relatively slow");
+	printf(BLU);
+	puts(" Normal     - 50% chance for the enemies to use Dijkstra's algorithm\n              Enemies have moderate speed");
+	printf(PNK);
+	puts(" Hard       - 67% chance for the enemies to use Dijkstra's algorithm\n              Enemy movements are considerably fast");
+	printf(RED);
+	puts(" Impossible - 100% chance for the enemies to use Dijkstra's algorithm\n              Enemies move as quickly as your character");
+	
+	printf(CRESET"\n Each level has different map\n\n");
+	
+	pressEnter();
+}
+
 void exitArt(){
-	printf("  _______ _                 _          ______           _____  _             _             _ \n");
+	printf(YEL);
+	printf("  _______ _                 _           __                   _             _             \n");
 	Sleep(1);
-    printf(" |__   __| |               | |        |  ____|         |  __ \\| |           (_)           | |\n");
+    printf(" |__   __| |               | |         / _|                 | |           (_)            \n");
     Sleep(1);
-    printf("    | |  | |__   __ _ _ __ | | _____  | |__ ___  _ __  | |__) | | __ _ _   _ _ _ __   __ _| |\n");
+    printf("    | |  | |__   __ _ _ __ | | _____  | |_ ___  _ __   _ __ | | __ _ _   _ _ _ __   __ _ \n");
     Sleep(1);
-    printf("    | |  | '_ \\ / _` | '_ \\| |/ / __| |  __/ _ \\| '__| |  ___/| |/ _` | | | | | '_ \\ / _` | |\n");
+    printf("    | |  | '_ \\ / _` | '_ \\| |/ / __| |  _/ _ \\| '__| | '_ \\| |/ _` | | | | | '_ \\ / _` |\n");
     Sleep(1);
-    printf("    | |  | | | | (_| | | | |   <\\__ \\ | | | (_) | |    | |    | | (_| | |_| | | | | | (_| |_|\n");
+    printf("    | |  | | | | (_| | | | |   <\\__ \\ | || (_) | |    | |_) | | (_| | |_| | | | | | (_| |\n");
     Sleep(1);
-    printf("    |_|  |_| |_|\\__,_|_| |_|_|\\_\\___/ |_|  \\___/|_|    |_|    |_|\\__,_|\\__, |_|_| |_|\\__, (_)\n");
+    printf("    |_|  |_| |_|\\__,_|_| |_|_|\\_\\___/ |_| \\___/|_|    | .__/|_|\\__,_|\\__, |_|_| |_|\\__, |\n");
     Sleep(1);
-    printf("                                                                        __/ |         __/ |  \n");
+    printf("                                                      | |             __/ |         __/ |\n");
     Sleep(1);
-    printf("                                                                       |___/         |___/   \n\n\n");
+    printf("                                                      |_|            |___/         |___/  \n");
 	Sleep(1);
+	
 	printf(CYN);
 	puts(" Creators:");
 	puts(" 1. Kenneth Sunjaya");
 	puts(" 2. Frederick Krisna Suryopranoto");
 	puts(" 3. Chris Bernard\n");
 	printf(RED);
+	
 	printf(" GitHub: ");
 	printf(YEL);
 	puts("https://github.com/kensunjaya/PACMAN\n\n");
@@ -869,14 +884,14 @@ void splashArt(){
 	system("cls");
 	gotoxy(2, 2);
 	printf(GRN);
-	printf("/$$$$$$$$        /$$$$$$  /$$   /$$                                  \n");
-    printf("| $$_____/       /$$__  $$| $$  /$$/                                  \n");
-    printf("| $$    /$$$$$$ | $$  \\__/| $$ /$$/  /$$$$$$/$$$$   /$$$$$$  /$$$$$$$ \n");
-    printf("| $$$$$|____  $$| $$      | $$$$$/  | $$_  $$_  $$ |____  $$| $$__  $$\n");
-    printf("| $$__/ /$$$$$$$| $$      | $$  $$  | $$ \\ $$ \\ $$  /$$$$$$$| $$  \\ $$\n");
-    printf("| $$   /$$__  $$| $$    $$| $$\\  $$ | $$ | $$ | $$ /$$__  $$| $$  | $$\n");
-    printf("| $$  |  $$$$$$$|  $$$$$$/| $$ \\  $$| $$ | $$ | $$|  $$$$$$$| $$  | $$\n");
-    printf("|__/   \\_______/ \\______/ |__/  \\__/|__/ |__/ |__/ \\_______/|__/  |__/\n");
+	printf(" /$$$$$$$$        /$$$$$$  /$$   /$$                                  \n");
+    printf(" | $$_____/       /$$__  $$| $$  /$$/                                  \n");
+    printf(" | $$    /$$$$$$ | $$  \\__/| $$ /$$/  /$$$$$$/$$$$   /$$$$$$  /$$$$$$$ \n");
+    printf(" | $$$$$|____  $$| $$      | $$$$$/  | $$_  $$_  $$ |____  $$| $$__  $$\n");
+    printf(" | $$__/ /$$$$$$$| $$      | $$  $$  | $$ \\ $$ \\ $$  /$$$$$$$| $$  \\ $$\n");
+    printf(" | $$   /$$__  $$| $$    $$| $$\\  $$ | $$ | $$ | $$ /$$__  $$| $$  | $$\n");
+    printf(" | $$  |  $$$$$$$|  $$$$$$/| $$ \\  $$| $$ | $$ | $$|  $$$$$$$| $$  | $$\n");
+    printf(" |__/   \\_______/ \\______/ |__/  \\__/|__/ |__/ |__/ \\_______/|__/  |__/\n");
 }
 
 
@@ -931,6 +946,18 @@ int selectDifficulty(char difficulty[5][20]) {
 	return selector(difficulty, 5);
 }
 
+void hideCursor(HANDLE handle, bool state) {
+	CONSOLE_CURSOR_INFO info;
+   	info.dwSize = 100;
+   	if (state) {
+   		info.bVisible = FALSE;
+	}
+   	else {
+   		info.bVisible = TRUE;	
+	}
+   	SetConsoleCursorInfo(handle, &info);
+}
+
 int main() {
 	// screen size, font, text size SETUP
 	keybd_event(VK_F11, 0, 0, 0); // enter fullscreen mode
@@ -938,6 +965,8 @@ int main() {
     DWORD dwWidth = GetSystemMetrics(SM_CXSCREEN);
 	DWORD dwHeight = GetSystemMetrics(SM_CYSCREEN);
 	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+	
+	hideCursor(consoleHandle, true);
 
     CONSOLE_FONT_INFOEX fontInfo = {0};
     fontInfo.cbSize = sizeof(CONSOLE_FONT_INFOEX);
@@ -953,11 +982,12 @@ int main() {
 	srand(time(0));
 	int index = 0, diff = 0;
 	char difficulty[5][20] = {"Easy", "Normal", "Hard", "Impossible", "Back"};
-	char options[4][20] = {"PLAY", "HIGH SCORE", "EXIT"};
+	char options[4][20] = {"PLAY", "HIGH SCORE", "RULES", "EXIT"};
 	readHighScore();
+	
 	do {
-		printMenu(options, index, 3);
-		index = selector(options, 3);
+		printMenu(options, index, 4);
+		index = selector(options, 4);
 		switch (index) {
 			case 0:
 	            system("cls");
@@ -966,7 +996,7 @@ int main() {
 	            	break;
 				}
 				else {
-					play(diff);
+					play(consoleHandle, diff);
 				}
 				index = 0;
 	            break;
@@ -977,6 +1007,11 @@ int main() {
 	            break;
 	        case 2:
 	        	system("cls");
+	        	printRules();
+	        	index = 0;
+	        	break;
+	        case 3:
+	        	system("cls");
     			exitArt();
     			pressEnter();
 				exit(0);
@@ -984,20 +1019,7 @@ int main() {
 	        default:
 	            printf("Invalid choice. Please try again.\n");
 		}
-	} while (index != 2);	
-//    do {
-//    	splashArt();
-//        printf("\nMenu:\n");
-//        printf("1. Play\n");
-//        printf("2. High Scores\n");
-//        printf("3. Exit\n");
-//        printf("Enter your choice: ");
-//        scanf("%d", &choice); getchar();
-//
-//        switch (choice) {
-//            
-//        }
-//    } while (choice != 3);
-    
+	} while (index != 3);	
+	
 	return 0;
 }
