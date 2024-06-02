@@ -695,7 +695,6 @@ void addHighScore(char *name, int score) {
 	    		curr->time = elapsedTime;
 			curr->difficulty = selectedDifficulty;
 		}
-		readHighScore();
 		break;
 	}
 	curr = curr->next;
@@ -719,6 +718,7 @@ void addHighScore(char *name, int score) {
 	}
 	
     fclose(file);
+	readHighScore();
 }
 
 void displayHighScores() {
