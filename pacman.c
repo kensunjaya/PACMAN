@@ -63,6 +63,18 @@ HighScoreNode *highScoreHead = NULL, *highScoreTail = NULL;
 //	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 //}
 
+void hideCursor(HANDLE handle, bool state) {
+	CONSOLE_CURSOR_INFO info;
+   	info.dwSize = 100;
+   	if (state) {
+   		info.bVisible = FALSE;
+	}
+   	else {
+   		info.bVisible = TRUE;	
+	}
+   	SetConsoleCursorInfo(handle, &info);
+}
+
 int randint(int a, int b) { // inclusive
     return ((rand() % (b - a + 1) + a));
 }
@@ -945,18 +957,6 @@ int selector(char options[4][20], int size) {
 int selectDifficulty(char difficulty[5][20]) {
 	printMenu(difficulty, 0, 5);
 	return selector(difficulty, 5);
-}
-
-void hideCursor(HANDLE handle, bool state) {
-	CONSOLE_CURSOR_INFO info;
-   	info.dwSize = 100;
-   	if (state) {
-   		info.bVisible = FALSE;
-	}
-   	else {
-   		info.bVisible = TRUE;	
-	}
-   	SetConsoleCursorInfo(handle, &info);
 }
 
 int main() {
