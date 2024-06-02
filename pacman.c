@@ -646,15 +646,15 @@ void pushMid(char name[100], int score, long long int time, int difficulty) {
 	}
 	
 	else {		
-		if (score <= highScoreHead->score) {
+		if (score >= highScoreHead->score) {
 			pushHead(name, score, time, difficulty);
 		}
-		else if (score >= highScoreTail->score) {
+		else if (score <= highScoreTail->score) {
 			pushTail(name, score, time, difficulty);
 		}
 		else {
 			HighScoreNode *curr = highScoreHead;
-			while ((curr->next != NULL) && (curr->next->score < score)) {
+			while ((curr->next != NULL) && (curr->next->score > score)) {
 				curr = curr->next;
 			}
 			newNode->next = curr->next;
