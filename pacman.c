@@ -942,7 +942,7 @@ int main() {
     CONSOLE_FONT_INFOEX fontInfo = {0};
     fontInfo.cbSize = sizeof(CONSOLE_FONT_INFOEX);
     fontInfo.nFont = 0;
-    fontInfo.dwFontSize.X = dwWidth/85;
+    fontInfo.dwFontSize.X = dwWidth/92;
     fontInfo.dwFontSize.Y = dwHeight/32; 
     fontInfo.FontFamily = FF_DONTCARE;
     fontInfo.FontWeight = FW_NORMAL;
