@@ -679,6 +679,18 @@ void pushMid(char name[100], int score, long long int time, int difficulty) {
 	highScoreTail->next = NULL;
 }
 
+void popScore() { 
+    if (highScoreHead == NULL) {
+    	highScoreHead = highScoreTail = NULL;
+        return;
+    }
+    HighScoreNode *nodeToDelete = highScoreHead;
+    highScoreHead = highScoreHead->next;
+    free(nodeToDelete);
+    nodeToDelete = NULL;
+    popScore();
+}
+
 void readHighScore() {
 	FILE *file = fopen("highscore.txt", "r");
 	if (!file) {
@@ -689,6 +701,7 @@ void readHighScore() {
     int score;
     long long int time;
     int difficulty;
+    popScore();
     while (fscanf(file, "%[^#]#%d#%lld#%d\n", name, &score, &time, &difficulty) != EOF) {
     	pushMid(name, score, time, difficulty);
     }
